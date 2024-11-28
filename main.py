@@ -9,7 +9,18 @@ colorR = (255,0,255)
 
 cx, cy, w, h = 100, 100, 200, 200
 
+class DragRect():
+    def __init__(self, posCenter, size=[200,200]):
+        self.posCenter = posCenter
+        self.size = size
 
+    def update(self, cursor):
+        cx, cy = self.posCenter
+        w, h = self.size
+        if cx-w//2 < cursor[0] < cx+w//2 and cy-h//2 < cursor[1] < cy+h//2:
+               self.posCenter = cursor
+
+react = DragRect([150,150])
 while True:
     sucess, img = cap.read()
     # Se for necessario inverter a imagem
@@ -24,12 +35,9 @@ while True:
         print(l)
         if l < 30:
             cursor = lmList[8]
-            if cx-w//2 < cursor[0] < cx+w//2 and cy-h//2 < cursor[1] < cy+h//2:
-                colorR = (0, 255, 0)
-                cx, cy = cursor
-            else:
-                colorR = (255, 0, 255)
 
+    cx, cy = react.posCenter
+    w, h = react.size
     cv2.rectangle(img, (cx-w//2, cy-h//2),
                 (cx+w//2, cy+h//2), colorR, cv2.FILLED)
 
