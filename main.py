@@ -1,5 +1,6 @@
 import cv2
 from cvzone.HandTrackingMouse import HandDetector
+import cvzone
 
 cap = cv2.VideoCapture(0)
 cap.set(3, 1280)
@@ -19,6 +20,9 @@ class DragRect():
         w, h = self.size
         if cx-w//2 < cursor[0] < cx+w//2 and cy-h//2 < cursor[1] < cy+h//2:
                self.posCenter = cursor
+reactList = []
+for x in range(5):
+    reactList.append(DragRect([x*250+150, 150]))
 
 react = DragRect([150,150])
 while True:
@@ -31,15 +35,20 @@ while True:
 
     if lmList:
 
-        l, _, _ = detector.findDistance(8, 12, img)
+        l, _, _ = detector.findDistance(8, 12, img, draw=False)
         print(l)
         if l < 30:
             cursor = lmList[8]
+            for react in reactList:
+                react.update(cursor)
 
-    cx, cy = react.posCenter
-    w, h = react.size
-    cv2.rectangle(img, (cx-w//2, cy-h//2),
-                (cx+w//2, cy+h//2), colorR, cv2.FILLED)
-
+    for react in reactList:
+        cx, cy = react.posCenter
+        w, h = react.size
+        cv2.rectangle(img, ( cx-w//2, cy-h//2),
+                    (cx+w//2, cy+h//2), colorR, cv2.FILLED)
+        
+        cvzone.cornerRect(img, ( cx-w//2, cy-h//2, w, h), rt=0)
+        
     cv2.imshow("Image", img)
     cv2.waitKey(1)
