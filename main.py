@@ -1,5 +1,5 @@
 import cv2
-from cvzone.HandTrackingMouse import HandDetector
+from cvzone.HandTrackingModule import HandDetector
 import cvzone
 import numpy as np
 
@@ -7,12 +7,12 @@ cap = cv2.VideoCapture(0)
 cap.set(3, 1280)
 cap.set(4, 720)
 detector = HandDetector(detectionCon=0.8)
-colorR = (255,0,255)
+colorR = (100,0,255)
 
 cx, cy, w, h = 100, 100, 200, 200
 
 class DragRect():
-    def __init__(self, posCenter, size=[200,200]):
+    def __init__(self, posCenter, size=[150,150]):
         self.posCenter = posCenter
         self.size = size
 
@@ -21,49 +21,44 @@ class DragRect():
         w, h = self.size
         if cx-w//2 < cursor[0] < cx+w//2 and cy-h//2 < cursor[1] < cy+h//2:
                self.posCenter = cursor
-reactList = []
-for x in range(5):
-    reactList.append(DragRect([x*250+150, 150]))
 
-react = DragRect([150,150])
+rectList = []
+for x in range(3):
+    rectList.append(DragRect([x*200+100, 150]))
+
 while True:
     sucess, img = cap.read()
     # Se for necessario inverter a imagem
     img = cv2.flip(img, 1)
-
-    img = detector.findHands(img)
-    lmList, _ = detector.findPosition(img)
-
-    if lmList:
-
-        l, _, _ = detector.findDistance(8, 12, img, draw=False)
-        print(l)
-        if l < 30:
-            cursor = lmList[8]
-            for react in reactList:
-                react.update(cursor)
-
-    ## Draw solid
-    # for rect in rectList:
-    #     cx, cy = rect.posCenter
-    #     w, h = rect.size
-    #     cv2.rectangle(img, (cx - w // 2, cy - h // 2),
-    #                   (cx + w // 2, cy + h // 2), colorR, cv2.FILLED)
-    #     cvzone.cornerRect(img, (cx - w // 2, cy - h // 2, w, h), 20, rt=0)
-
-    ## Transparente
+    
+    hands, img = detector.findHands(img)
+    
+    if hands:
+        hand = hands[0] 
+        lmList = hand['lmList'] 
+        
+        if lmList:
+            x1, y1 = lmList[4][0], lmList[4][1]  # Coordenadas do polegar
+            x2, y2 = lmList[8][0], lmList[8][1]  # Coordenadas do dedo indicador
+            l, _, _ = detector.findDistance((x1, y1), (x2, y2))  # Distancia entre os dois pontos
+            if l < 40:
+                cursorX, cursorY, _ = lmList[8]
+                cursor = [cursorX, cursorY]
+                print(cursor)
+                for rect in rectList:
+                    rect.update(cursor)
+    
     imgNew = np.zeros_like(img, np.uint8)
     for rect in rectList:
         cx, cy = rect.posCenter
         w, h = rect.size
-        cv2.rectangle(imgNew, (cx - w // 2, cy - h // 2),
-                      (cx + w // 2, cy + h // 2), colorR, cv2.FILLED)
+        cv2.rectangle(imgNew, (cx - w // 2, cy - h // 2), (cx + w // 2, cy + h // 2), colorR, cv2.FILLED)
         cvzone.cornerRect(imgNew, (cx - w // 2, cy - h // 2, w, h), 20, rt=0)
 
     out = img.copy()
     alpha = 0.5
     mask = imgNew.astype(bool)
     out[mask] = cv2.addWeighted(img, alpha, imgNew, 1 - alpha, 0)[mask]
-
+    
     cv2.imshow("Image", out)
     cv2.waitKey(1)
